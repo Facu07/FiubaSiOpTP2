@@ -17,6 +17,7 @@ struct Vehiculo{
 	int k;
 	int orilla;
 };
+//Vehiculo tempVehiculo;
 
 struct Orilla{
 	int nombre;
@@ -32,43 +33,47 @@ pthread_mutex_t mutexFerry;
 
 //sv_sem vehiculos;
 
-void* thread_vehiculo(void*arg){
-	Vehiculo * arg_ptr = (Vehiculo*)arg;
-	Vehiculo vehiculo = *arg_ptr;
-	switch(vehiculo.orilla){
+void* thread_cargar_orilla(void*arg){
+
+	Vehiculo tempVehiculo;
+	tempVehiculo.ID = rand();						// Random para el nombre de los vehiculos
+	tempVehiculo.k = 1 + (rand()% ferry.n);			// Random para el peso que no sea mayor a kmax
+	tempVehiculo.orilla = 1 + (rand()% 4); 			// Numeros randoms entre 1 y 4 para determinar a que orilla van
+	switch(tempVehiculo.orilla){
 	case NORTE:
 		pthread_mutex_lock(&mutexQueueNorte);
-		Norte.colaVehiculos.push(vehiculo);
+		Norte.colaVehiculos.push(tempVehiculo);
 		pthread_mutex_unlock(&mutexQueueNorte);
 	break;
 	case SUR:
 		pthread_mutex_lock(&mutexQueueSur);
-		Sur.colaVehiculos.push(vehiculo);
+		Sur.colaVehiculos.push(tempVehiculo);
 		pthread_mutex_unlock(&mutexQueueSur);
 	break;
 	case ESTE:
 		pthread_mutex_lock(&mutexQueueEste);
-		Este.colaVehiculos.push(vehiculo);
+		Este.colaVehiculos.push(tempVehiculo);
 		pthread_mutex_unlock(&mutexQueueEste);
 	break;
 	case OESTE:
 		pthread_mutex_lock(&mutexQueueOeste);
-		Oeste.colaVehiculos.push(vehiculo);
+		Oeste.colaVehiculos.push(tempVehiculo);
 		pthread_mutex_unlock(&mutexQueueOeste);
 	break;
 	}
 }
 
 void* carga_descarga(void*arg){
-	Vehiculo * arg_ptr = (Vehiculo*)arg;
 	int contador = 0;
 	bool salir = false;
-	while(ferry.cantVehiculos > contador){
+	while(ferry.cantVehiculos >= contador){
 		switch(ferry.rutaActual){
 		case NORTE:
+			printf("Ferry anclando en Orilla Norte\n");
+			printf("Descargando %d \n",ferry.k);
+			ferry.rutaActual = SUR;
 			while(!Norte.colaVehiculos.empty() || !salir){
 				pthread_mutex_lock(&mutexQueueNorte);
-				printf("Ferry anclando en Orilla Norte");
 				struct Vehiculo vehiculoActual = Norte.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Norte.colaVehiculos.pop();
@@ -78,11 +83,16 @@ void* carga_descarga(void*arg){
 					salir = true;
 				}
 			}
+			printf("Se cargo %d en el ferry \n", ferry.k);
+			salir = false;
 		break;
 		case SUR:
+			printf("Ferry anclando en Orilla Sur\n");
+			printf("Descargando %d \n",ferry.k);
+			ferry.k = 0;
+			ferry.rutaActual = ESTE;
 			while(!Sur.colaVehiculos.empty() || !salir){
 				pthread_mutex_lock(&mutexQueueSur);
-				printf("Ferry anclando en Orilla Sur");
 				struct Vehiculo vehiculoActual = Sur.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Sur.colaVehiculos.pop();
@@ -92,11 +102,16 @@ void* carga_descarga(void*arg){
 					salir = true;
 				}
 			}
+			printf("Se cargo %d en el ferry \n", ferry.k);
+			salir = false;
 		break;
 		case ESTE:
+			printf("Ferry anclando en Orilla Este\n");
+			printf("Descargando %d \n",ferry.k);
+			ferry.k = 0;
+			ferry.rutaActual = OESTE;
 			while(!Este.colaVehiculos.empty() || !salir){
 				pthread_mutex_lock(&mutexQueueEste);
-				printf("Ferry anclando en Orilla Este");
 				struct Vehiculo vehiculoActual = Este.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Este.colaVehiculos.pop();
@@ -106,8 +121,14 @@ void* carga_descarga(void*arg){
 					salir = true;
 				}
 			}
+			printf("Se cargo %d en el ferry \n", ferry.k);
+			salir = false;
 		break;
 		case OESTE:
+			printf("Ferry anclando en Orilla Este\n");
+			printf("Descargando %d \n",ferry.k);
+			ferry.k = 0;
+			ferry.rutaActual = NORTE;
 			while(!Oeste.colaVehiculos.empty() || !salir){
 				pthread_mutex_lock(&mutexQueueOeste);
 				printf("Ferry anclando en Orilla Oeste");
@@ -120,16 +141,21 @@ void* carga_descarga(void*arg){
 					salir = true;
 				}
 			}
+			printf("Se cargo %d en el ferry \n", ferry.k);
+			salir = false;
 		break;
+		}
 	}
 }
 
 int main(int argc, char *argv[]) {
 
-	ferry.kmax = atoi(argv[0]);
-	ferry.n = atoi(argv[1]);
-	ferry.cantVehiculos = atoi(argv[2]);
+	ferry.kmax = atoi(argv[1]);
+	ferry.n = atoi(argv[2]);
+	ferry.cantVehiculos = atoi(argv[3]);
 	ferry.rutaActual = NORTE; 				// Empieza por el Norte
+	ferry.k = 0;
+
 
 	Norte.nombre = NORTE;
 	Sur.nombre = SUR;
@@ -144,18 +170,17 @@ int main(int argc, char *argv[]) {
 	pthread_mutex_init(&mutexQueueOeste,NULL);
 	pthread_mutex_init(&mutexFerry,NULL);
 
-	Vehiculo tempVehiculo;
-
-	for(int i = 0; i == ferry.cantVehiculos; i++){
-		tempVehiculo.ID = rand();				// Random para el nombre de los vehiculos
-		tempVehiculo.k = rand();				// Random para el peso
-		tempVehiculo.orilla = 1 + rand()%5; 	// Numeros randoms entre 1 y 4 para determinar a que orilla van
-		pthread_create(&threads_vehiculos[i],NULL,thread_vehiculo,&tempVehiculo);
+	for(int i = 0; i < ferry.cantVehiculos; i++){
+		pthread_create(&threads_vehiculos[i],NULL,thread_cargar_orilla,NULL);
 	}
 
 	pthread_create(&thread_ferry,NULL,carga_descarga,NULL);
 
+	for(int i = 0; i < ferry.cantVehiculos; i++){
+		pthread_join(threads_vehiculos[i], NULL);
+	}
 
+	pthread_join(thread_ferry, NULL);
 
 	return 0;
 }
