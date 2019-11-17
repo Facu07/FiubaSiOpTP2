@@ -66,13 +66,14 @@ void* thread_cargar_orilla(void*arg){
 void* carga_descarga(void*arg){
 	int contador = 0;
 	bool salir = false;
-	while(ferry.cantVehiculos >= contador){
+	while(ferry.cantVehiculos > contador){
 		switch(ferry.rutaActual){
 		case NORTE:
 			printf("Ferry anclando en Orilla Norte\n");
 			printf("Descargando %d \n",ferry.k);
+			ferry.k = 0;
 			ferry.rutaActual = SUR;
-			while(!(Norte.colaVehiculos.empty()) || !salir){
+			while(!(Norte.colaVehiculos.empty()) && !salir){
 				pthread_mutex_lock(&mutexQueueNorte);
 				struct Vehiculo vehiculoActual = Norte.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
@@ -91,7 +92,7 @@ void* carga_descarga(void*arg){
 			printf("Descargando %d \n",ferry.k);
 			ferry.k = 0;
 			ferry.rutaActual = ESTE;
-			while(!(Sur.colaVehiculos.empty()) || !salir){
+			while(!(Sur.colaVehiculos.empty()) && !salir){
 				pthread_mutex_lock(&mutexQueueSur);
 				struct Vehiculo vehiculoActual = Sur.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
@@ -110,7 +111,7 @@ void* carga_descarga(void*arg){
 			printf("Descargando %d \n",ferry.k);
 			ferry.k = 0;
 			ferry.rutaActual = OESTE;
-			while(!(Este.colaVehiculos.empty()) || !salir){
+			while(!(Este.colaVehiculos.empty()) && !salir){
 				pthread_mutex_lock(&mutexQueueEste);
 				struct Vehiculo vehiculoActual = Este.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
@@ -125,13 +126,12 @@ void* carga_descarga(void*arg){
 			salir = false;
 		break;
 		case OESTE:
-			printf("Ferry anclando en Orilla Este\n");
+			printf("Ferry anclando en Orilla Oeste\n");
 			printf("Descargando %d \n",ferry.k);
 			ferry.k = 0;
 			ferry.rutaActual = NORTE;
-			while(!(Oeste.colaVehiculos.empty()) || !salir){
+			while(!(Oeste.colaVehiculos.empty()) && !salir){
 				pthread_mutex_lock(&mutexQueueOeste);
-				printf("Ferry anclando en Orilla Oeste");
 				struct Vehiculo vehiculoActual = Oeste.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Oeste.colaVehiculos.pop();
