@@ -72,14 +72,14 @@ void* carga_descarga(void*arg){
 			printf("Ferry anclando en Orilla Norte\n");
 			printf("Descargando %d \n",ferry.k);
 			ferry.rutaActual = SUR;
-			while(!Norte.colaVehiculos.empty() || !salir){
+			while(!(Norte.colaVehiculos.empty()) || !salir){
 				pthread_mutex_lock(&mutexQueueNorte);
 				struct Vehiculo vehiculoActual = Norte.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Norte.colaVehiculos.pop();
 				contador ++;
 				pthread_mutex_unlock(&mutexQueueNorte);
-				if(ferry.n == ferry.k){
+				if(ferry.n <= ferry.k){
 					salir = true;
 				}
 			}
@@ -91,14 +91,14 @@ void* carga_descarga(void*arg){
 			printf("Descargando %d \n",ferry.k);
 			ferry.k = 0;
 			ferry.rutaActual = ESTE;
-			while(!Sur.colaVehiculos.empty() || !salir){
+			while(!(Sur.colaVehiculos.empty()) || !salir){
 				pthread_mutex_lock(&mutexQueueSur);
 				struct Vehiculo vehiculoActual = Sur.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Sur.colaVehiculos.pop();
 				contador ++;
 				pthread_mutex_unlock(&mutexQueueSur);
-				if(ferry.n == ferry.k){
+				if(ferry.n <= ferry.k){
 					salir = true;
 				}
 			}
@@ -110,14 +110,14 @@ void* carga_descarga(void*arg){
 			printf("Descargando %d \n",ferry.k);
 			ferry.k = 0;
 			ferry.rutaActual = OESTE;
-			while(!Este.colaVehiculos.empty() || !salir){
+			while(!(Este.colaVehiculos.empty()) || !salir){
 				pthread_mutex_lock(&mutexQueueEste);
 				struct Vehiculo vehiculoActual = Este.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Este.colaVehiculos.pop();
 				contador ++;
 				pthread_mutex_unlock(&mutexQueueEste);
-				if(ferry.n == ferry.k){
+				if(ferry.n <= ferry.k){
 					salir = true;
 				}
 			}
@@ -129,7 +129,7 @@ void* carga_descarga(void*arg){
 			printf("Descargando %d \n",ferry.k);
 			ferry.k = 0;
 			ferry.rutaActual = NORTE;
-			while(!Oeste.colaVehiculos.empty() || !salir){
+			while(!(Oeste.colaVehiculos.empty()) || !salir){
 				pthread_mutex_lock(&mutexQueueOeste);
 				printf("Ferry anclando en Orilla Oeste");
 				struct Vehiculo vehiculoActual = Oeste.colaVehiculos.front();
@@ -137,7 +137,7 @@ void* carga_descarga(void*arg){
 				Oeste.colaVehiculos.pop();
 				contador ++;
 				pthread_mutex_unlock(&mutexQueueOeste);
-				if(ferry.n == ferry.k){
+				if(ferry.n <= ferry.k){
 					salir = true;
 				}
 			}
