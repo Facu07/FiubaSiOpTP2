@@ -150,6 +150,12 @@ void* carga_descarga(void*arg){
 
 int main(int argc, char *argv[]) {
 
+  //imprimo los numeros de padron
+  cout << 96354 << " Santiago Aso" << endl;
+  cout << 12345 << " Facundo Walter" << endl;
+  cout << 12345 << " Pablo Prieto"  << endl;
+  cout << 12345 << " Adrian Bonino" << endl;
+
 	ferry.kmax = atoi(argv[1]);
 	ferry.n = atoi(argv[2]);
 	ferry.cantVehiculos = atoi(argv[3]);
