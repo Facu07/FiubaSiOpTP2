@@ -1,10 +1,10 @@
-#include "includes.h"
+#include "./includes.h"
 #ifndef SV_SHM_H
 #define SV_SHM_H
 #define BUFSIZE 8192
 
 class sv_shm{
-    string clave; 
+    string clave;
     int shm;
     key_t ktclave;
     public:
@@ -24,7 +24,7 @@ sv_shm::sv_shm(string cla){
     clave="/tmp"+cla;
     string cmd="touch "+clave;
     system(cmd.c_str());         // en System V la clave DEBE ser un archivo
-    ktclave=ftok(clave.c_str(),1);	
+    ktclave=ftok(clave.c_str(),1);
     shm = shmget(ktclave, length, oflag);
     if(shm==-1){
         cerr<<"no se puede crear/acceder a la shm "<<clave<<endl;

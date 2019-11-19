@@ -1,4 +1,4 @@
-#include "includes.h"
+#include "./includes.h"
 #ifndef SV_SEM_H
 #define SV_SEM_H
 
@@ -49,9 +49,9 @@ sv_sem::sv_sem(string cla,int ini){
              cerr<<"no se puede crear el semaforo"<<clave<<endl;
             exit (1);
              }
-        }	
+        }
    else{
-        int ret=semctl(sem, 0, SETVAL, ini); 
+        int ret=semctl(sem, 0, SETVAL, ini);
         if (ret==-1){
             cerr<<"no se puede inicializar el semaforo"<<clave<<
             " al valor "<<ini<<endl;
@@ -63,7 +63,7 @@ void sv_sem::del(){
     retcode=semctl (sem, 0, IPC_RMID);
     if (retcode==-1){
  		cerr<<"No se puede cerrar el semaforo "<<endl;
-		cerr<<"Semaforo<"<<clave<<","<<sem<<"> "<<endl; 
+		cerr<<"Semaforo<"<<clave<<","<<sem<<"> "<<endl;
  		exit(1);}
     string cmd="rm "+clave;
     system (cmd.c_str());
@@ -78,7 +78,7 @@ void sv_sem::post(){
     retcode=semop (sem, &oper, 1);
     if (retcode==-1){
      	perror ("No se puede hacer post al semaforo");
-        cerr<<"Semaforo<"<<clave<<"> "<<endl; 
+        cerr<<"Semaforo<"<<clave<<"> "<<endl;
      	exit(1);}
 }
 
@@ -91,7 +91,7 @@ void sv_sem::wait(){
     retcode=semop (sem, &oper, 1);
     if (retcode==-1){
  		perror ("No se puede hacer wait en el semaforo");
-		cerr<<"Semaforo<"<<clave<<"> "<<endl; 
+		cerr<<"Semaforo<"<<clave<<"> "<<endl;
  		exit(1);}
 }
 
@@ -106,4 +106,3 @@ ostream& operator << (ostream& os,sv_sem a)
  	return os <<" con valor "<<arg.array[0]<<endl;
 }
 #endif
-
