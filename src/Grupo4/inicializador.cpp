@@ -1,71 +1,69 @@
 #include <iostream>
-#include <pthread.h>
 #include <queue>
 #include "sv_sem.h"
 #include "sv_shm.h"
 #include "defs.h"
+#include <pthread.h>
+#include "ferry.h"
+#include "vehiculo.h"
 using namespace std;
 
-struct Ferry{
-	int kmax, k, n, cantVehiculos;
-	int rutaActual;
-};
-Ferry ferry;
-
-struct Vehiculo{
-	int ID;
-	int k;
-	int orilla;
-};
-//Vehiculo tempVehiculo;
-
 struct Orilla{
-	int nombre;
-	queue <Vehiculo> colaVehiculos;
+        int nombre;
+        queue <Vehiculo> colaVehiculos;
 };
 Orilla Norte, Sur, Este, Oeste;
 
-pthread_mutex_t mutexQueueNorte;
-pthread_mutex_t mutexQueueSur;
-pthread_mutex_t mutexQueueEste;
-pthread_mutex_t mutexQueueOeste;
-pthread_mutex_t mutexFerry;
-
-//sv_sem vehiculos;
-
 void* thread_cargar_orilla(void*arg){
 
+        //orillas
+        sv_sem mutexQueueNorte("mutexQueueNorte",1);
+        sv_sem mutexQueueSur("mutexQueueSur",1);
+        sv_sem mutexQueueEste("mutexQueueEste",1);
+        sv_sem mutexQueueOeste("mutexQueueOeste",1);
+
 	Vehiculo tempVehiculo;
-	tempVehiculo.ID = rand();						// Random para el nombre de los vehiculos
+	tempVehiculo.ID = rand();					// Random para el nombre de los vehiculos
 	tempVehiculo.k = 1 + (rand()% ferry.n);			// Random para el peso que no sea mayor a kmax
 	tempVehiculo.orilla = 1 + (rand()% 4); 			// Numeros randoms entre 1 y 4 para determinar a que orilla van
 	switch(tempVehiculo.orilla){
 	case NORTE:
-		pthread_mutex_lock(&mutexQueueNorte);
+		mutexQueueNorte.wait();
 		Norte.colaVehiculos.push(tempVehiculo);
-		pthread_mutex_unlock(&mutexQueueNorte);
+		mutexQueueNorte.post();
 	break;
 	case SUR:
-		pthread_mutex_lock(&mutexQueueSur);
+		mutexQueueSur.wait();
 		Sur.colaVehiculos.push(tempVehiculo);
-		pthread_mutex_unlock(&mutexQueueSur);
+		mutexQueueSur.post();
 	break;
 	case ESTE:
-		pthread_mutex_lock(&mutexQueueEste);
+		mutexQueueEste.wait();
 		Este.colaVehiculos.push(tempVehiculo);
-		pthread_mutex_unlock(&mutexQueueEste);
+		mutexQueueEste.post();
 	break;
 	case OESTE:
-		pthread_mutex_lock(&mutexQueueOeste);
+		mutexQueueEste.wait();
 		Oeste.colaVehiculos.push(tempVehiculo);
-		pthread_mutex_unlock(&mutexQueueOeste);
+		mutexQueueEste.post();
 	break;
 	}
 }
 
 void* carga_descarga(void*arg){
+
+	//ferry
+        sv_sem mutexFerry("mutexFerry",1);
+
+        //orillas
+        sv_sem mutexQueueNorte("mutexQueueNorte",1);
+        sv_sem mutexQueueSur("mutexQueueSur",1);
+        sv_sem mutexQueueEste("mutexQueueEste",1);
+        sv_sem mutexQueueOeste("mutexQueueOeste",1);
+
 	int contador = 0;
 	bool salir = false;
+
 	while(ferry.cantVehiculos > contador){
 		switch(ferry.rutaActual){
 		case NORTE:
@@ -74,12 +72,17 @@ void* carga_descarga(void*arg){
 			ferry.k = 0;
 			ferry.rutaActual = SUR;
 			while(!(Norte.colaVehiculos.empty()) && !salir){
-				pthread_mutex_lock(&mutexQueueNorte);
+				mutexFerry.wait();
+
+				mutexQueueNorte.wait();
 				struct Vehiculo vehiculoActual = Norte.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Norte.colaVehiculos.pop();
 				contador ++;
-				pthread_mutex_unlock(&mutexQueueNorte);
+				mutexQueueNorte.post();
+
+				mutexFerry.post();
+
 				if(ferry.n <= ferry.k){
 					salir = true;
 				}
@@ -93,12 +96,17 @@ void* carga_descarga(void*arg){
 			ferry.k = 0;
 			ferry.rutaActual = ESTE;
 			while(!(Sur.colaVehiculos.empty()) && !salir){
-				pthread_mutex_lock(&mutexQueueSur);
+				mutexFerry.wait();
+
+				mutexQueueSur.wait();
 				struct Vehiculo vehiculoActual = Sur.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Sur.colaVehiculos.pop();
 				contador ++;
-				pthread_mutex_unlock(&mutexQueueSur);
+				mutexQueueSur.post();
+
+				mutexFerry.post();
+
 				if(ferry.n <= ferry.k){
 					salir = true;
 				}
@@ -111,13 +119,18 @@ void* carga_descarga(void*arg){
 			printf("Descargando %d \n",ferry.k);
 			ferry.k = 0;
 			ferry.rutaActual = OESTE;
-			while(!(Este.colaVehiculos.empty()) && !salir){
-				pthread_mutex_lock(&mutexQueueEste);
+			while(!(Este.colaVehiculos.empty()) && !salir){ 
+				mutexFerry.wait();
+
+				mutexQueueEste.wait();
 				struct Vehiculo vehiculoActual = Este.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Este.colaVehiculos.pop();
 				contador ++;
-				pthread_mutex_unlock(&mutexQueueEste);
+				mutexQueueEste.post();
+
+				mutexFerry.post();
+
 				if(ferry.n <= ferry.k){
 					salir = true;
 				}
@@ -131,12 +144,17 @@ void* carga_descarga(void*arg){
 			ferry.k = 0;
 			ferry.rutaActual = NORTE;
 			while(!(Oeste.colaVehiculos.empty()) && !salir){
-				pthread_mutex_lock(&mutexQueueOeste);
+				mutexFerry.wait();
+
+				mutexQueueOeste.wait();
 				struct Vehiculo vehiculoActual = Oeste.colaVehiculos.front();
 				ferry.k += vehiculoActual.k;
 				Oeste.colaVehiculos.pop();
 				contador ++;
-				pthread_mutex_unlock(&mutexQueueOeste);
+				mutexQueueOeste.post();
+
+				mutexFerry.post();
+
 				if(ferry.n <= ferry.k){
 					salir = true;
 				}
@@ -151,35 +169,43 @@ void* carga_descarga(void*arg){
 int main(int argc, char *argv[]) {
 
   //imprimo los numeros de padron
-  cout << 96354 << " Santiago Aso" << endl;
-  cout << 12345 << " Facundo Walter" << endl;
-  cout << 12345 << " Pablo Prieto"  << endl;
-  cout << 12345 << " Adrian Bonino" << endl;
+  cout << 93644 << " Santiago Aso" << endl;
+  cout << 96029 << " Facundo Walter" << endl;
+  cout << 91561 << " Pablo Prieto"  << endl;
+  cout << 68180 << " Adrian Bonino" << endl;
+  cout << " " << endl;
 
-	ferry.kmax = atoi(argv[1]);
-	ferry.n = atoi(argv[2]);
+  	ferry.n = atoi(argv[1]);
+	ferry.kmax = atoi(argv[2]);
 	ferry.cantVehiculos = atoi(argv[3]);
 	ferry.rutaActual = NORTE; 				// Empieza por el Norte
 	ferry.k = 0;
-
 
 	Norte.nombre = NORTE;
 	Sur.nombre = SUR;
 	Este.nombre = ESTE;
 	Oeste.nombre = OESTE;
+       
+	//ferry
+	sv_sem mutexFerry("mutexFerry",1);
+
+	//orillas
+	sv_sem mutexQueueNorte("mutexQueueNorte",1);
+	sv_sem mutexQueueSur("mutexQueueSur",1);
+	sv_sem mutexQueueEste("mutexQueueEste",1);
+	sv_sem mutexQueueOeste("mutexQueueOeste",1);
+	
+	//sirve para generar los ids de los vehiculos
+	sv_sem vehiculo_id("vehiculo_id",1);
 
 	pthread_t threads_vehiculos[ferry.cantVehiculos];
-	pthread_t thread_ferry;
-	pthread_mutex_init(&mutexQueueNorte,NULL);
-	pthread_mutex_init(&mutexQueueSur,NULL);
-	pthread_mutex_init(&mutexQueueEste,NULL);
-	pthread_mutex_init(&mutexQueueOeste,NULL);
-	pthread_mutex_init(&mutexFerry,NULL);
-
 	for(int i = 0; i < ferry.cantVehiculos; i++){
-		pthread_create(&threads_vehiculos[i],NULL,thread_cargar_orilla,NULL);
+            vehiculo_id.wait();
+            pthread_create(&threads_vehiculos[i],NULL,thread_cargar_orilla,NULL);
+            vehiculo_id.post();
 	}
 
+	pthread_t thread_ferry;
 	pthread_create(&thread_ferry,NULL,carga_descarga,NULL);
 
 	for(int i = 0; i < ferry.cantVehiculos; i++){
